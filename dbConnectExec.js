@@ -7,11 +7,11 @@ const config = {
     server:  cpatteConfig.DB.server,
     database: cpatteConfig.DB.database, 
 }
-async function executeCustomerQuery(aQuery){
+async function executeQuery(aQuery){
     var connection = await sql.connect(config)
     var result = await connection.query(aQuery)
     
     return result.recordset;
 }
 
-module.exports = {executeCustomerQuery: executeCustomerQuery}
+module.exports = {executeQuery: executeQuery}
