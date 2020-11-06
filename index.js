@@ -12,9 +12,14 @@ const jwt = require('jsonwebtoken')
 const config = require('./config.js')
 const auth = require('./middleware/authenticate')
 
+//REQUIRE CORS
+const cors = require('cors')
+
+//azurewebsites.net, colostate.edu
 //CREATE APP FROM EXPRESS FUNCTION
 const app = express();
 app.use(express.json())
+app.use(cors())
 
 
 //CREATE FIRST ROUTE/ENDPOINT FOR APP (route/path, function(request, response))
@@ -45,6 +50,7 @@ app.post("/reviews", auth, async (req,res)=>{
     //console.log("Here is the Customer in /reviews", req.customer)
     //res.send("Here is your response")}
     
+    //NOT WORKING!!!!!!!!
     let insertQuery = `INSERT INTO Review(Summary, Rating, ProductFK, CustomerFK)
     OUTPUT inserted.ReviewPK, inserted.Summary, inserted.Rating, inserted.ProductFK
     VALUES('${summary}', '${rating}', '${productFK}', ${req.customer.CustomerPK})`
@@ -178,7 +184,7 @@ app.get("/products",(req,res)=>{
     })
 })
 
-//GET ENDPOINT CUSTOMERS/:PK (NOT WORKING!!!!!!!!!!)
+//GET ENDPOINT CUSTOMERS/:PK /customers/#
 app.get("/customers/:pk", (req,res)=>{
     var pk = req.params.pk
     //console.log("My PK:" , pk)
@@ -199,6 +205,9 @@ db.executeQuery(customerQuery)
 })    
 })    
 
-//INITIALIZE APP (port number, what you want app to do when server is running)
-app.listen(5000,()=>{console.log("App is Running on Port 5000")})
+const PORT = process.env.PORT || 5000
+//HARD CODING - INITIALIZE APP (port number, what you want app to do when server is running)
+app.listen(PORT,()=>{console.log(`App is Running on Port ${PORT}`)})
+
+
 
