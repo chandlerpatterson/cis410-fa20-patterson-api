@@ -10,17 +10,61 @@ const db = require('./dbConnectExec.js')
 //REQUIRE TOKEN
 const jwt = require('jsonwebtoken')
 const config = require('./config.js')
+const auth = require('./middleware/authenticate')
 
 //CREATE APP FROM EXPRESS FUNCTION
 const app = express();
 app.use(express.json())
 
+
 //CREATE FIRST ROUTE/ENDPOINT FOR APP (route/path, function(request, response))
 //OTHER ROUTES: 1. app.post() 2. app.put() 3. app.delete()
 //("/hi") = Endpoint http://localhost:5000/hi : Displays "Hello World" in Server
-app.get("/hi",(req,res)=>{
-    res.send("hello world")
+//app.get("/hi",(req,res)=>{
+    //res.send("hello world")
+//})
+
+//NEW FUNCTION FOR /REVIEWS (11/5)
+//const auth = async(req, res, next)=>{
+//console.log(req.header("Authorization"))
+//next()
+//}
+
+//POST REVIEW FOR E-BOOKS (11/5)
+app.post("/reviews", auth, async (req,res)=>{
+
+    try{
+    var productFK = req.body.productFK;
+    var summary = req.body.summary;
+    var rating = req.body.rating;
+
+    if(!productFK || !summary || !rating)(res.status(400).send("Bad Request"))
+    
+    summary = summer.replace("'", "''")
+
+    //console.log("Here is the Customer in /reviews", req.customer)
+    //res.send("Here is your response")}
+    
+    let insertQuery = `INSERT INTO Review(Summary, Rating, ProductFK, CustomerFK)
+    OUTPUT inserted.ReviewPK, inserted.Summary, inserted.Rating, inserted.ProductFK
+    VALUES('${summary}', '${rating}', '${productFK}', ${req.customer.CustomerPK})`
+
+    let insertedReview = await db.executeQuery(insertQuery)
+    //console.log(insertedReview)
+    res.status(201).send(insertedReview[0])
+}
+    catch(error){
+        console.log("Error in POST /reviews", error);
+        res.status(500).send()
+    }
 })
+
+//APP GET METHOD FOR /CUSTOMERS/ME (11/5)
+app.get('/customers/me', auth,(req,res) =>{
+    res.send(req.customer)
+})
+
+
 //ASYNC FUNCTION WITH ENDPOINT POST FOR CUSTOMERS LOGIN (CLASS 11/3)
 app.post("/customers/login", async (req,res)=> {
     //console.log(req.body)
@@ -43,7 +87,6 @@ app.post("/customers/login", async (req,res)=> {
             return res.status(500).send()
         }
     //console.log(result)
-
     if(!result[0]){
         return res.status(400).send("Invalid User Credentials")
     }
@@ -62,7 +105,7 @@ app.post("/customers/login", async (req,res)=> {
     console.log(token)
 
     //4. SAVE A TOKEN IN DB & SEND TOKEN/USER INFO BACK TO USER
-    let setTokenQuery = `UPDATE Customer SET Token = '${token}' WHERE ContactPK = '${user.CustomerPK}`
+    let setTokenQuery = `UPDATE Customer SET Token = '${token}' WHERE CustomerPK = '${user.CustomerPK}'`
     try{
         await db.executeQuery(setTokenQuery)
         res.status(200).send({
@@ -85,7 +128,7 @@ app.post("/customers/login", async (req,res)=> {
 app.post("/customers", async (req,res)=> {
     //res.send("Creating Customer")
     //console.log("request body", req.body)
-
+    
 var firstName = req.body.firstName;
 var lastName = req.body.lastName;
 var email = req.body.email;
@@ -113,7 +156,7 @@ if(existingCustomer[0]){
 var hashedPassword = bcrypt.hashSync(password) 
 var insertQuery = `INSERT INTO Customer(FirstName, LastName, Email, Password) VALUES ('${firstName}', 
 '${lastName}', '${email}', '${hashedPassword}')`
-
+console.log(insertQuery)
 db.executeQuery(insertQuery)
 .then(()=>{res.status(201).send()})
 .catch((err)=>{
@@ -135,7 +178,7 @@ app.get("/products",(req,res)=>{
     })
 })
 
-//GET ENDPOINT CUSTOMERS/:PK 
+//GET ENDPOINT CUSTOMERS/:PK (NOT WORKING!!!!!!!!!!)
 app.get("/customers/:pk", (req,res)=>{
     var pk = req.params.pk
     //console.log("My PK:" , pk)
