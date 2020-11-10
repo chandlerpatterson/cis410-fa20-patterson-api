@@ -15,27 +15,38 @@ const auth = require('./middleware/authenticate')
 //REQUIRE CORS
 const cors = require('cors')
 
-//azurewebsites.net, colostate.edu
 //CREATE APP FROM EXPRESS FUNCTION
 const app = express();
 app.use(express.json())
 app.use(cors())
 
+//POST /CUSTOMERS/LOGOUT (11/10)
+app.post("/customers/logout", auth, (req,res)=>{
+    var query = `UPDATE Customer SET Token = NULL WHERE CustomerPK = ${req.customer.CustomerPK}`
 
-//CREATE FIRST ROUTE/ENDPOINT FOR APP (route/path, function(request, response))
-//OTHER ROUTES: 1. app.post() 2. app.put() 3. app.delete()
-//("/hi") = Endpoint http://localhost:5000/hi : Displays "Hello World" in Server
-//app.get("/hi",(req,res)=>{
-    //res.send("hello world")
+    db.executeQuery(query)
+    .then(()=>{res.status(200).send()})
+    .catch((error)=>{
+        console.log("Error in POST /customers/logout", error)
+        res.status(500).send()
+    })
+})
+
+//GET /REVIEWS/ME (11/10) !!!!!!!!!!!
+//app.get('/reviews/me', auth, async (req,res)=>{
+    //let cusomterPK = req.cutomer.CustomerPK;
+//})
+//PATCH /REVIEWS/:PK (11/10)!!!!!!!
+//app.patch("/reviews/:pk", auth, async (req,res)=>{
+    //let reviewPK = req.params.pk;
 //})
 
-//NEW FUNCTION FOR /REVIEWS (11/5)
-//const auth = async(req, res, next)=>{
-//console.log(req.header("Authorization"))
-//next()
-//}
+//DELETE REVIEWS/:PK (11/10)!!!!!!!
+//app.delete("/reviews/:pk", auth, async(req,res)=>{
+    //let reviewPK = req.params.pk
+//})
 
-//POST REVIEW FOR E-BOOKS (11/5)
+//POST /REVIEWS (11/5)
 app.post("/reviews", auth, async (req,res)=>{
 
     try{
@@ -45,12 +56,11 @@ app.post("/reviews", auth, async (req,res)=>{
 
     if(!productFK || !summary || !rating)(res.status(400).send("Bad Request"))
     
-    summary = summer.replace("'", "''")
+    summary = summary.replace("'", "''")
 
     //console.log("Here is the Customer in /reviews", req.customer)
     //res.send("Here is your response")}
     
-    //NOT WORKING!!!!!!!!
     let insertQuery = `INSERT INTO Review(Summary, Rating, ProductFK, CustomerFK)
     OUTPUT inserted.ReviewPK, inserted.Summary, inserted.Rating, inserted.ProductFK
     VALUES('${summary}', '${rating}', '${productFK}', ${req.customer.CustomerPK})`
@@ -65,13 +75,14 @@ app.post("/reviews", auth, async (req,res)=>{
     }
 })
 
-//APP GET METHOD FOR /CUSTOMERS/ME (11/5)
-app.get('/customers/me', auth,(req,res) =>{
+//GET /CUSTOMERS/ME (11/5)
+app.get("/customers/me", auth, (req,res) =>{
     res.send(req.customer)
+    //console.log(req.customer)
 })
 
 
-//ASYNC FUNCTION WITH ENDPOINT POST FOR CUSTOMERS LOGIN (CLASS 11/3)
+//POST /CUSTOMERS/LOGIN (CLASS 11/3)
 app.post("/customers/login", async (req,res)=> {
     //console.log(req.body)
     var email = req.body.email;
@@ -130,48 +141,48 @@ app.post("/customers/login", async (req,res)=> {
     }
 
 })
-//ASYNC FUNCTION (AWAIT) & ENDPOINT PRODUCTS POST (CLASS 10/29)
+//POST /CUSTOMERS (10/29)
 app.post("/customers", async (req,res)=> {
     //res.send("Creating Customer")
     //console.log("request body", req.body)
     
-var firstName = req.body.firstName;
-var lastName = req.body.lastName;
-var email = req.body.email;
-var password = req.body.password;
+    var firstName = req.body.firstName;
+    var lastName = req.body.lastName;
+    var email = req.body.email;
+    var password = req.body.password;
 
-//IF LOOP FOR ERRORS SEND BAD REQUEST MESSAGE
-if(!firstName || !lastName || !email || !password){
-    return res.status(400).send("Bad Request")
-}
+    //IF LOOP FOR ERRORS SEND BAD REQUEST MESSAGE
+    if(!firstName || !lastName || !email || !password){
+        return res.status(400).send("Bad Request")
+    }
 
-//ACCEPTING SINGLE QUOTE IN FIRST NAME & LAST NAME
-firstName = firstName.replace("'", "''")
-lastName = lastName.replace("'", "''")
+    //ACCEPTING SINGLE QUOTE IN FIRST NAME & LAST NAME
+    firstName = firstName.replace("'", "''")
+    lastName = lastName.replace("'", "''")
 
-//QUERY: CHECKING FOR DUPLICATE EMAIL
-var emailCheckQuery = `SELECT Email FROM Customer WHERE Email = '${email}'`
+    //QUERY: CHECKING FOR DUPLICATE EMAIL
+    var emailCheckQuery = `SELECT Email FROM Customer WHERE Email = '${email}'`
 
-var existingCustomer = await db.executeQuery(emailCheckQuery)
-//console.log("Existing Email", existingEmail)
-if(existingCustomer[0]){
-    return res.status(409).send("Please Enter a Different Email.")
-}
+    var existingCustomer = await db.executeQuery(emailCheckQuery)
+    //console.log("Existing Email", existingEmail)
+    if(existingCustomer[0]){
+        return res.status(409).send("Please Enter a Different Email.")
+    }
 
-//HASH THE PASSWORD
-var hashedPassword = bcrypt.hashSync(password) 
-var insertQuery = `INSERT INTO Customer(FirstName, LastName, Email, Password) VALUES ('${firstName}', 
-'${lastName}', '${email}', '${hashedPassword}')`
-console.log(insertQuery)
-db.executeQuery(insertQuery)
-.then(()=>{res.status(201).send()})
-.catch((err)=>{
-    console.log("Error in POST /customers", err)
-    res.status(500).send()
-})
-})
+    //HASH THE PASSWORD
+    var hashedPassword = bcrypt.hashSync(password) 
+    var insertQuery = `INSERT INTO Customer(FirstName, LastName, Email, Password) VALUES ('${firstName}', 
+    '${lastName}', '${email}', '${hashedPassword}')`
+    console.log(insertQuery)
+    db.executeQuery(insertQuery)
+    .then(()=>{res.status(201).send()})
+    .catch((err)=>{
+        console.log("Error in POST /customers", err)
+        res.status(500).send()
+    })
+    })
 
-//GET ENDPOINT FOR /PRODUCTS
+//GET /PRODUCTS (10/29)
 app.get("/products",(req,res)=>{
     //GET DATA FROM DATABASE
     db.executeQuery(`SELECT * FROM Product`)
@@ -184,7 +195,7 @@ app.get("/products",(req,res)=>{
     })
 })
 
-//GET ENDPOINT CUSTOMERS/:PK /customers/#
+//GET CUSTOMERS/:PK (10/29)
 app.get("/customers/:pk", (req,res)=>{
     var pk = req.params.pk
     //console.log("My PK:" , pk)
@@ -205,6 +216,7 @@ db.executeQuery(customerQuery)
 })    
 })    
 
+//PORTING
 const PORT = process.env.PORT || 5000
 //HARD CODING - INITIALIZE APP (port number, what you want app to do when server is running)
 app.listen(PORT,()=>{console.log(`App is Running on Port ${PORT}`)})
